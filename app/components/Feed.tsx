@@ -3,14 +3,14 @@
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useInView } from 'react-intersection-observer';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { PostsPage } from '@/lib/types';
-import { useRouter } from 'next/navigation';
+import PostModal from './PostModal';
 
 export default function Feed() {
   const { ref, inView } = useInView();
   const queryClient = useQueryClient();
-  const router = useRouter();
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   
   // This uses the server-prefetched data immediately (Instant Load)
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery<PostsPage>({
@@ -30,6 +30,40 @@ export default function Feed() {
       fetchNextPage();
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Handle browser back/forward
+  useEffect(() => {
+    // Check initial URL on mount
+    const path = window.location.pathname;
+    if (path.startsWith('/post/')) {
+      const slug = path.replace('/post/', '');
+      setSelectedSlug(slug);
+    }
+
+    const handlePopState = () => {
+      const currentPath = window.location.pathname;
+      if (currentPath.startsWith('/post/')) {
+        const slug = currentPath.replace('/post/', '');
+        setSelectedSlug(slug);
+      } else {
+        setSelectedSlug(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // ESC key to close modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedSlug) {
+        window.history.back();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [selectedSlug]);
 
   if (isLoading) {
     return (
@@ -59,12 +93,14 @@ export default function Feed() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {data?.pages.map((page) =>
             page.items.map((post) => (
-              // HOVER PREFETCH: Prefetch on hover for instant opening!
-              <Link 
-                key={post.id} 
-                href={`/post/${post.slug}`} 
-                prefetch={false}
-                onMouseEnter={() => router.prefetch(`/post/${post.slug}`)}
+              <Link
+                key={post.id}
+                href={`/post/${post.slug}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSelectedSlug(post.slug);
+                  window.history.pushState(null, '', `/post/${post.slug}`);
+                }}
                 className="group"
               >
                 <article className="border rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 bg-white overflow-hidden transform group-hover:-translate-y-1">
@@ -108,6 +144,14 @@ export default function Feed() {
           )}
         </div>
       </div>
+
+      {/* Instant Modal */}
+      {selectedSlug && (
+        <PostModal 
+          slug={selectedSlug} 
+          onClose={() => window.history.back()} 
+        />
+      )}
     </div>
   );
 }
