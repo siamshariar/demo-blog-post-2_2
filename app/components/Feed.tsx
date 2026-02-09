@@ -87,7 +87,15 @@ export default function Feed() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <header className="mb-8">
           <h1 className="text-4xl font-bold text-black mb-2">Trending Posts</h1>
-          <p className="text-black">Instant-loading with smart caching • Click any post to see the magic ✨</p>
+          <p className="text-black mb-3">Instant-loading with smart caching • Click any post to see the magic ✨</p>
+          <div className="flex gap-3 text-xs">
+            <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded">
+              🎭 Click = Modal View (instant)
+            </span>
+            <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded">
+              📄 Refresh = Detail Page (SEO)
+            </span>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -149,7 +157,11 @@ export default function Feed() {
       {selectedSlug && (
         <PostModal 
           slug={selectedSlug} 
-          onClose={() => window.history.back()} 
+          onClose={() => window.history.back()}
+          onNavigate={(newSlug) => {
+            setSelectedSlug(newSlug);
+            window.history.pushState(null, '', `/post/${newSlug}`);
+          }}
         />
       )}
     </div>
