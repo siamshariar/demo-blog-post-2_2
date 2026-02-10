@@ -3,6 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --spacing: 0.25rem;
 }
 
 @theme inline {
@@ -46,4 +47,8 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+.gap-6 {
+    gap: calc(var(--spacing) * 6);
 }

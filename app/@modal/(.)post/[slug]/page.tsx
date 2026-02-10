@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Post, PostsPage } from '@/lib/types';
 import { useEffect, useMemo, use, useRef } from 'react';
+import PostContainer from '@/app/components/PostContainer';
 
 export default function InterceptedPostModal({ 
   params 
@@ -16,6 +17,21 @@ export default function InterceptedPostModal({
   
   // Unwrap params INSTANTLY during render (not in useEffect!)
   const { slug } = use(params);
+
+  // Lock body scroll when modal is open - preserve scroll position
+  useEffect(() => {
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
 
   // Scroll modal to top when slug changes (related post clicked)
   useEffect(() => {
@@ -82,30 +98,27 @@ export default function InterceptedPostModal({
     <div 
       ref={modalContainerRef}
       className="fixed inset-0 bg-gradient-to-br from-gray-50 to-gray-100 z-50 overflow-y-auto"
-      onClick={onDismiss}
     >
-      <div 
-        className="max-w-4xl mx-auto py-10 px-4 min-h-screen"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={onDismiss}
-          className="inline-flex items-center gap-2 text-black hover:text-black mb-6 group"
-        >
-          <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Feed
-        </button>
-
-        <article className="bg-white rounded-xl shadow-lg p-8">
+      {/* Backdrop overlay */}
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100" onClick={(e) => e.stopPropagation()}>
+        <PostContainer header={
+          <button
+            onClick={onDismiss}
+            className="inline-flex items-center gap-2 text-black hover:text-black mb-6 group"
+          >
+            <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+        }>
           <div className="mb-6">
             <div className="flex gap-2 mb-4">
-              <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
-                🎭 Modal View
+              <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+                📄 Detail Page
               </span>
               <span className="inline-block px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                ⚡ Instant Cache
+                🔍 SEO Optimized
               </span>
               {isFetching && (
                 <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded-full animate-pulse">
@@ -120,7 +133,7 @@ export default function InterceptedPostModal({
               {fullPost?.author && <span className="font-medium">By {fullPost.author}</span>}
               {fullPost?.publishedAt && (
                 <span>
-                  {new Date(fullPost.publishedAt).toLocaleDateString('en-US', {
+                  {new Date(fullPost?.publishedAt).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric'
@@ -167,7 +180,7 @@ export default function InterceptedPostModal({
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {fullPost.relatedPosts
-                  .filter(related => related.slug !== slug)
+                  .filter(related => related.id !== fullPost.id)
                   .map((related) => (
                   <button
                     key={related.id}
@@ -190,7 +203,7 @@ export default function InterceptedPostModal({
               </div>
             )}
           </div>
-        </article>
+        </PostContainer>
       </div>
     </div>
   );

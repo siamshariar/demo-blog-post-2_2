@@ -4,6 +4,7 @@ import { getPostBySlug } from '@/lib/api';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import PostDetailClient from '@/app/components/PostDetailClient';
+import PostContainer from '@/app/components/PostContainer';
 
 // Server-side Data Fetching
 async function getPost(slug: string) {
@@ -53,8 +54,7 @@ export default async function PostPage({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-4xl mx-auto py-10 px-4">
-        {/* Back Button */}
+      <PostContainer header={
         <Link 
           href="/"
           className="inline-flex items-center gap-2 text-black hover:text-black mb-6 group"
@@ -62,12 +62,11 @@ export default async function PostPage({
           <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to Feed
+          Back
         </Link>
-
-        {/* Content with Modal Support */}
+      }>
         <PostDetailClient post={post} />
-      </div>
+      </PostContainer>
     </div>
   );
 }

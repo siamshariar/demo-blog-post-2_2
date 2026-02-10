@@ -6,6 +6,7 @@ import { useInView } from 'react-intersection-observer';
 import { useEffect, useState, useRef } from 'react';
 import { PostsPage } from '@/lib/types';
 import PostModal from './PostModal';
+import { useRouter } from 'next/navigation';
 
 export default function Feed() {
   const { ref, inView } = useInView();
@@ -27,6 +28,7 @@ export default function Feed() {
   };
   
   // This uses the server-prefetched data immediately (Instant Load)
+  const router = useRouter();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery<PostsPage>({
     queryKey: ['posts'],
     queryFn: async ({ pageParam }) => {
@@ -188,8 +190,9 @@ export default function Feed() {
           slug={selectedSlug} 
           onClose={() => window.history.back()}
           onNavigate={(newSlug) => {
-            setSelectedSlug(newSlug);
-            window.history.pushState(null, '', `/post/${newSlug}`);
+            // Close the modal and navigate client-side to full post page
+            setSelectedSlug(null);
+            router.push(`/post/${newSlug}`);
           }}
         />
       )}

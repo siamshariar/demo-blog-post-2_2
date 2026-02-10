@@ -9,7 +9,7 @@ interface PostDetailClientProps {
 
 export default function PostDetailClient({ post }: PostDetailClientProps) {
   return (
-    <article className="bg-white rounded-xl shadow-lg p-8">
+    <>
       <div className="mb-6">
         <div className="flex gap-2 mb-4">
           <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
@@ -58,7 +58,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
         {!post.relatedPosts || post.relatedPosts.length === 0 ? (
           <p className="text-gray-500">No related posts available.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {post.relatedPosts
               .filter(related => related.slug !== post.slug)
               .map((related) => (
@@ -82,6 +82,6 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
           </div>
         )}
       </div>
-    </article>
+    </>
   );
 }

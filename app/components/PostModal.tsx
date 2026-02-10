@@ -3,6 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Post, PostsPage } from '@/lib/types';
 import { useMemo, useEffect, useRef } from 'react';
+import PostContainer from '@/app/components/PostContainer';
 
 interface PostModalProps {
   slug: string;
@@ -78,12 +79,8 @@ export default function PostModal({ slug, onClose, onNavigate }: PostModalProps)
     <div 
       ref={modalContainerRef}
       className="fixed inset-0 bg-gradient-to-br from-gray-50 to-gray-100 z-50 overflow-y-auto"
-      onClick={onClose}
     >
-      <div 
-        className="max-w-4xl mx-auto py-10 px-4 min-h-screen"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <PostContainer header={
         <button
           onClick={onClose}
           className="inline-flex items-center gap-2 text-black hover:text-black mb-6 group"
@@ -91,10 +88,9 @@ export default function PostModal({ slug, onClose, onNavigate }: PostModalProps)
           <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to Feed
+          Back
         </button>
-
-        <article className="bg-white rounded-xl shadow-lg p-8">
+      }>
             <div className="mb-6">
               <div className="flex gap-2 mb-4">
                 <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
@@ -146,7 +142,7 @@ export default function PostModal({ slug, onClose, onNavigate }: PostModalProps)
             <div className="mt-12 border-t pt-8">
               <h3 className="font-bold text-2xl mb-6 text-black">Related Posts</h3>
               {isFetching && (!fullPost?.relatedPosts || fullPost.relatedPosts.length === 0) ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="border rounded-lg overflow-hidden animate-pulse">
                       <div className="w-full h-32 bg-gray-200"></div>
@@ -159,7 +155,7 @@ export default function PostModal({ slug, onClose, onNavigate }: PostModalProps)
               ) : !fullPost?.relatedPosts || fullPost.relatedPosts.length === 0 ? (
                 <p className="text-gray-500">No related posts available.</p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {fullPost.relatedPosts
                     .filter(related => related.slug !== slug)
                     .map((related) => (
@@ -184,8 +180,7 @@ export default function PostModal({ slug, onClose, onNavigate }: PostModalProps)
                 </div>
               )}
             </div>
-          </article>
-        </div>
+      </PostContainer>
     </div>
   );
 }
