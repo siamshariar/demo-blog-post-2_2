@@ -16,6 +16,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Instant Modal Demo - Next.js 15 + React Query",
   description: "Lightning-fast modal opens using route interception and smart caching",
+  openGraph: {
+    title: "Instant Modal Demo - Next.js 15 + React Query",
+    description: "Lightning-fast modal opens using route interception and smart caching",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Instant Modal Demo - Next.js 15 + React Query",
+    description: "Lightning-fast modal opens using route interception and smart caching",
+  },
 };
 
 export default function RootLayout({

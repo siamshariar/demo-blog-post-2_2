@@ -14,11 +14,27 @@ interface PostModalProps {
 export default function PostModal({ slug, onClose, onNavigate }: PostModalProps) {
   const queryClient = useQueryClient();
   const modalContainerRef = useRef<HTMLDivElement>(null);
+  const originalMetadataRef = useRef<{
+    title: string;
+    description: string;
+    ogTitle: string;
+    ogDescription: string;
+    ogImage: string;
+  } | null>(null);
 
   // Lock body scroll when modal is open - preserve scroll position
   useEffect(() => {
     // Add class for instant scroll
     document.documentElement.classList.add('modal-opening');
+    
+    // Save original metadata
+    originalMetadataRef.current = {
+      title: document.title,
+      description: document.querySelector('meta[name="description"]')?.getAttribute('content') || '',
+      ogTitle: document.querySelector('meta[property="og:title"]')?.getAttribute('content') || '',
+      ogDescription: document.querySelector('meta[property="og:description"]')?.getAttribute('content') || '',
+      ogImage: document.querySelector('meta[property="og:image"]')?.getAttribute('content') || '',
+    };
     
     const scrollY = window.scrollY;
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
@@ -37,6 +53,15 @@ export default function PostModal({ slug, onClose, onNavigate }: PostModalProps)
       document.body.style.width = '';
       document.body.style.paddingRight = '';
       document.body.style.overflow = '';
+      
+      // Restore original metadata
+      if (originalMetadataRef.current) {
+        document.title = originalMetadataRef.current.title;
+        updateMetaTag('name', 'description', originalMetadataRef.current.description);
+        updateMetaTag('property', 'og:title', originalMetadataRef.current.ogTitle);
+        updateMetaTag('property', 'og:description', originalMetadataRef.current.ogDescription);
+        updateMetaTag('property', 'og:image', originalMetadataRef.current.ogImage);
+      }
       // Don't restore scroll here - parent component handles it
     };
   }, []);
@@ -59,6 +84,17 @@ export default function PostModal({ slug, onClose, onNavigate }: PostModalProps)
       },
       staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     });
+  };
+
+  // Helper function to update meta tags
+  const updateMetaTag = (attr: string, key: string, content: string) => {
+    let element = document.querySelector(`meta[${attr}="${key}"]`);
+    if (!element) {
+      element = document.createElement('meta');
+      element.setAttribute(attr, key);
+      document.head.appendChild(element);
+    }
+    element.setAttribute('content', content);
   };
 
   // 1. GET DATA FROM CACHE (Instant)
@@ -86,6 +122,30 @@ export default function PostModal({ slug, onClose, onNavigate }: PostModalProps)
     initialData: cachedData,
     staleTime: 5 * 60 * 1000,
   });
+
+  // Update metadata when post data loads
+  useEffect(() => {
+    if (fullPost) {
+      // Update document title
+      document.title = `${fullPost.title} | Blog`;
+      
+      // Update meta description
+      updateMetaTag('name', 'description', fullPost.shortDesc || '');
+      
+      // Update Open Graph tags for social sharing
+      updateMetaTag('property', 'og:title', fullPost.title);
+      updateMetaTag('property', 'og:description', fullPost.shortDesc || '');
+      updateMetaTag('property', 'og:image', fullPost.thumbnail);
+      updateMetaTag('property', 'og:url', `${window.location.origin}/post/${fullPost.slug}`);
+      updateMetaTag('property', 'og:type', 'article');
+      
+      // Update Twitter Card tags
+      updateMetaTag('name', 'twitter:card', 'summary_large_image');
+      updateMetaTag('name', 'twitter:title', fullPost.title);
+      updateMetaTag('name', 'twitter:description', fullPost.shortDesc || '');
+      updateMetaTag('name', 'twitter:image', fullPost.thumbnail);
+    }
+  }, [fullPost]);
 
   return (
     <div 
