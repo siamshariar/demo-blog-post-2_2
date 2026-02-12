@@ -37,10 +37,10 @@ export default function VirtualizedFeed() {
     setModalSlug(null);
     // Restore URL to home
     window.history.pushState(null, '', '/');
-    // Restore scroll position after modal closes
-    requestAnimationFrame(() => {
+    // Restore scroll position after modal closes with slight delay
+    setTimeout(() => {
       window.scrollTo({ top: savedScrollRef.current, behavior: 'instant' });
-    });
+    }, 10);
   };
   
   // Handle modal navigate (when clicking related posts)
@@ -50,21 +50,18 @@ export default function VirtualizedFeed() {
     // No URL update to avoid RSC fetches
   };
   
-  // Handle browser back/forward buttons
+  // Prevent body scroll when modal is open
   useEffect(() => {
-    const handlePopState = () => {
-      const path = window.location.pathname;
-      if (path.startsWith('/post/')) {
-        const slug = path.replace('/post/', '');
-        setModalSlug(slug);
-      } else {
-        setModalSlug(null);
-      }
-    };
+    if (modalSlug) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
     
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [modalSlug]);
   
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery<PostsPage>({
     queryKey: ['posts'],
@@ -113,6 +110,14 @@ export default function VirtualizedFeed() {
       fetchNextPage();
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, modalSlug]);
+
+  // Advance fetch when 60% of loaded rows are visible
+  const rangeChanged = useCallback(({ endIndex }: { endIndex: number }) => {
+    const totalRows = rows.length;
+    if (endIndex >= totalRows * 0.6 && hasNextPage && !isFetchingNextPage && !modalSlug) {
+      fetchNextPage();
+    }
+  }, [rows.length, hasNextPage, isFetchingNextPage, fetchNextPage, modalSlug]);
 
   // Render a row of posts (grid row)
   const renderRow = useCallback((index: number) => {
@@ -245,6 +250,7 @@ export default function VirtualizedFeed() {
             totalCount={rows.length}
             itemContent={renderRow}
             endReached={loadMore}
+            rangeChanged={rangeChanged}
             overscan={500}
             increaseViewportBy={{ top: 400, bottom: 400 }}
             components={{
