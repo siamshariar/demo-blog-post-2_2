@@ -9,24 +9,36 @@ import PostModal from './PostModal';
 export default function VirtualizedFeed() {
   const queryClient = useQueryClient();
   const [modalSlug, setModalSlug] = useState<string | null>(null);
-  const savedScrollRef = useRef<number>(0);
   const virtuosoRef = useRef<any>(null);
   
   // Check URL on mount for direct navigation or reload
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    const handlePopState = () => {
       const path = window.location.pathname;
-      if (path.startsWith('/post/')) {
+      if (path === '/') {
+        setModalSlug(null);
+      } else if (path.startsWith('/post/')) {
         const slug = path.replace('/post/', '');
         setModalSlug(slug);
       }
+    };
+
+    if (typeof window !== 'undefined') {
+      // Handle initial load
+      handlePopState();
+      // Listen for browser back/forward
+      window.addEventListener('popstate', handlePopState);
     }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('popstate', handlePopState);
+      }
+    };
   }, []);
   
   // Handle instant modal open (state-based, no navigation)
   const handlePostClick = (slug: string) => {
-    // Save scroll position before opening modal
-    savedScrollRef.current = window.scrollY;
     setModalSlug(slug);
     // Update URL without navigation (for reload support)
     window.history.pushState(null, '', `/post/${slug}`);
@@ -34,20 +46,16 @@ export default function VirtualizedFeed() {
   
   // Handle modal close
   const handleModalClose = () => {
-    setModalSlug(null);
-    // Restore URL to home
-    window.history.pushState(null, '', '/');
-    // Restore scroll position after modal closes with slight delay
-    setTimeout(() => {
-      window.scrollTo({ top: savedScrollRef.current, behavior: 'instant' });
-    }, 10);
+    // Use browser back to navigate properly through post history
+    window.history.back();
   };
   
   // Handle modal navigate (when clicking related posts)
   const handleModalNavigate = (slug: string) => {
     // Don't reset scroll position when navigating between modals
     setModalSlug(slug);
-    // No URL update to avoid RSC fetches
+    // Update URL for browser back support
+    window.history.pushState(null, '', `/post/${slug}`);
   };
   
   // Prevent body scroll when modal is open

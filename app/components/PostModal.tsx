@@ -12,6 +12,46 @@ interface PostModalProps {
   onNavigate: (slug: string) => void;
 }
 
+// Client-side mock data generator - same as server
+const generateMockPost = (id: number): Post => {
+  return {
+    id,
+    slug: `post-${id}`,
+    title: `Amazing Post #${id}: Exploring Modern Web Development`,
+    shortDesc: `Discover the incredible insights about web development, performance optimization, and user experience in this comprehensive article. Learn how to build better applications.`,
+    thumbnail: `https://picsum.photos/seed/${id}/800/600`,
+    content: `
+      <h2>Introduction</h2>
+      <p>This is the full content of post #${id}. In a real application, this would contain rich HTML content with images, videos, and more.</p>
+      
+      <h3>Key Points</h3>
+      <ul>
+        <li>Performance optimization strategies</li>
+        <li>Modern React patterns and best practices</li>
+        <li>SEO-friendly architecture</li>
+        <li>User experience improvements</li>
+      </ul>
+      
+      <h3>Deep Dive</h3>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+      
+      <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+      
+      <h3>Advanced Concepts</h3>
+      <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
+      
+      <blockquote>
+        "The best way to predict the future is to invent it." - Alan Kay
+      </blockquote>
+      
+      <h3>Conclusion</h3>
+      <p>By implementing these patterns, you can create incredibly fast and user-friendly applications that scale to millions of pages while maintaining excellent performance.</p>
+    `,
+    author: `Author ${id % 10}`,
+    publishedAt: new Date(Date.now() - id * 3600000).toISOString(),
+  };
+};
+
 export default function PostModal({ slug, onClose, onNavigate }: PostModalProps) {
   const queryClient = useQueryClient();
   const modalContainerRef = useRef<HTMLDivElement>(null);
@@ -55,6 +95,9 @@ export default function PostModal({ slug, onClose, onNavigate }: PostModalProps)
       document.body.style.paddingRight = '';
       document.body.style.overflow = '';
       
+      // Restore scroll position immediately
+      window.scrollTo({ top: scrollY, behavior: 'instant' });
+      
       // Restore original metadata
       if (originalMetadataRef.current) {
         document.title = originalMetadataRef.current!.title;
@@ -63,7 +106,6 @@ export default function PostModal({ slug, onClose, onNavigate }: PostModalProps)
         updateMetaTag('property', 'og:description', originalMetadataRef.current!.ogDescription);
         updateMetaTag('property', 'og:image', originalMetadataRef.current!.ogImage);
       }
-      // Don't restore scroll here - parent component handles it
     };
   }, []);
 
@@ -90,15 +132,26 @@ export default function PostModal({ slug, onClose, onNavigate }: PostModalProps)
     element.setAttribute('content', content);
   };
 
-  // 1. GET DATA FROM CACHE (Instant)
+  // 1. GET DATA FROM CACHE (Instant) - with generated content
   const cachedData = useMemo(() => {
     const postsData = queryClient.getQueryData(['posts']) as { 
       pages: PostsPage[] 
     } | undefined;
     
-    return postsData?.pages
+    const cachedPost = postsData?.pages
       ?.flatMap((p) => p.items)
       ?.find((item) => item.slug === slug);
+    
+    // Generate content instantly for cached post
+    if (cachedPost) {
+      const id = parseInt(cachedPost.slug.replace('post-', ''));
+      return {
+        ...cachedPost,
+        content: generateMockPost(id).content
+      };
+    }
+    
+    return cachedPost;
   }, [queryClient, slug]);
 
   // 2. FETCH FULL DETAILS (Background)
@@ -199,10 +252,10 @@ export default function PostModal({ slug, onClose, onNavigate }: PostModalProps)
               {postData?.shortDesc}
             </div>
 
-            {fullPost?.content && (
+            {(postData?.content || fullPost?.content) && (
               <div 
                 className="prose prose-lg max-w-none prose-headings:text-black prose-p:text-black prose-li:text-black"
-                dangerouslySetInnerHTML={{ __html: fullPost.content }}
+                dangerouslySetInnerHTML={{ __html: postData?.content || fullPost?.content || '' }}
               />
             )}
 
